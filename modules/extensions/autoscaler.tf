@@ -20,6 +20,7 @@ locals {
   cluster_autoscaler_manifest_path = join("/", [local.yaml_manifest_path, "cluster_autoscaler.yaml"])
   cluster_autoscaler_defaults = {
     "cloudProvider"                              = "oci-oke",
+    "expander"                                   = "priority",
     "extraArgs.logtostderr"                      = "true",
     "extraArgs.v"                                = "4",
     "extraArgs.stderrthreshold"                  = "info",
@@ -150,5 +151,19 @@ resource "null_resource" "cluster_autoscaler" {
 
   provisioner "remote-exec" {
     inline = ["kubectl apply -f ${local.cluster_autoscaler_manifest_path}"]
+  }
+}
+
+resource "kubernetes_config_map_v1" "autoscaler_expander_config_map" {
+  metadata {
+    name      = "cluster-autoscaler-priority-expander"
+    namespace = "kube-system"
+  }
+
+  data = {
+    priorities = {
+      90: ["*preemptible*"],
+      10: ["*ondemand*"]
+    }
   }
 }
