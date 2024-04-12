@@ -20,7 +20,7 @@ locals {
   cluster_autoscaler_manifest_path = join("/", [local.yaml_manifest_path, "cluster_autoscaler.yaml"])
   cluster_autoscaler_defaults = {
     "cloudProvider"                              = "oci-oke",
-    "expander"                                   = "priority",
+    "extraArgs.expander"                         = "priority",
     "extraArgs.logtostderr"                      = "true",
     "extraArgs.v"                                = "4",
     "extraArgs.stderrthreshold"                  = "info",
