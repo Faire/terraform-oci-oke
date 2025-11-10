@@ -56,6 +56,16 @@ variable "worker_pool_size" {
 }
 
 #
+# Workers: Compute clusters
+#
+
+variable "worker_compute_clusters" {
+  default     = {}
+  description = "Whether to create compute clusters shared by nodes across multiple worker pools enabled for 'compute-cluster'."
+  type        = map(any)
+}
+
+#
 # Workers: network
 #
 
@@ -193,6 +203,12 @@ variable "worker_volume_kms_key_id" {
 variable "worker_pv_transit_encryption" {
   default     = false
   description = "Whether to enable in-transit encryption for the data volume's paravirtualized attachment by default when unspecified on a pool."
+  type        = bool
+}
+
+variable "worker_legacy_imds_endpoints_disabled" {
+  default     = false
+  description = "Whether to disable requests to the IMDSv1 endpoint and only allow requests to the IMDSv2 endpoint.  See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringimds.htm>Instance Metadata</a> for more information."
   type        = bool
 }
 

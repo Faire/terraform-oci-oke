@@ -10,7 +10,7 @@ locals {
 
   baserepo        = "ol${var.operator_image_os_version}"
   developer_EPEL  = "${local.baserepo}_developer_EPEL"
-  olcne18         = "${local.baserepo}_olcne18"
+  olcne19         = "${local.baserepo}_olcne19"
   developer_olcne = "${local.baserepo}_developer_olcne"
   arch_amd        = "amd64"
   arch_arm        = "aarch64"
@@ -45,9 +45,9 @@ data "cloudinit_config" "operator" {
           gpgcheck = true
           enabled  = true
         }
-        "${local.olcne18}" = {
+        "${local.olcne19}" = {
           name     = "Oracle Linux Cloud Native Environment 1.8 ($basearch)"
-          baseurl  = "https://yum$ociregion.$ocidomain/repo/OracleLinux/OL${var.operator_image_os_version}/olcne18/$basearch/"
+          baseurl  = "https://yum$ociregion.$ocidomain/repo/OracleLinux/OL${var.operator_image_os_version}/olcne19/$basearch/"
           gpgkey   = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle"
           gpgcheck = true
           enabled  = true
@@ -137,6 +137,25 @@ data "cloudinit_config" "operator" {
     }
   }
 
+  # k8sgpt installation
+  dynamic "part" {
+    for_each = var.install_k8sgpt ? [1] : []
+    content {
+      content_type = "text/cloud-config"
+      content = jsonencode({
+        runcmd = [
+          "CLI_ARCH='${local.arch_amd}'",
+          "if [ \"$(uname -m)\" = ${local.arch_arm} ]; then CLI_ARCH='arm64'; fi",
+          "if [ -f /etc/os-release ]; then os_id=$(grep '^ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '\"'); fi",
+          "if [ \"$os_id\" == \"ubuntu\" ]; then curl -LO https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_$CLI_ARCH.deb; dpkg -i k8sgpt_$CLI_ARCH.deb; rm k8sgpt_$CLI_ARCH.deb; fi",
+          "if [ \"$os_id\" == \"ol\" ]; then while fuser /var/lib/rpm/.rpm.lock >/dev/null 2>&1; do sleep 5; done; rpm -ivh https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_$CLI_ARCH.rpm; fi"
+        ]
+      })
+      filename   = "20-k8sgpt.yml"
+      merge_type = local.default_cloud_init_merge_type
+    }
+  }
+
   # kubectx/kubens installation
   dynamic "part" {
     for_each = var.install_kubectx ? [1] : []
@@ -200,8 +219,22 @@ data "cloudinit_config" "operator" {
       content_type = "text/cloud-config"
       content = jsonencode({
         runcmd = [
-          "curl -LO https://github.com/derailed/k9s/releases/download/v0.40.5/k9s_Linux_amd64.tar.gz",
+          "curl -LO https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz",
           "tar -xvzf k9s_Linux_amd64.tar.gz && mv ./k9s /usr/bin/k9s",
+          "echo 'export K9S_FEATURE_GATE_NODE_SHELL=true' | tee -a /home/${var.user}/.bashrc",
+          "mkdir -p /home/${var.user}/.config/k9s",
+          <<-EOT
+            cat << 'EOF' | tee /home/${var.user}/.config/k9s/views.yaml
+            views:
+              v1/nodes:
+                columns:
+                  - NAME
+                  - HOSTNAME:.metadata.labels.hostname
+                  - SHAPE:.metadata.labels.node\.kubernetes\.io/instance-type
+                  - SERIAL:.metadata.labels.oci\.oraclecloud\.com/host\.serial_number
+                  - ROLE:|H
+            EOF
+          EOT
         ]
       })
       filename   = "20-k9s.yml"

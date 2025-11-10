@@ -100,28 +100,17 @@ data "cloudinit_config" "workers" {
   dynamic "part" {
     for_each = !each.value.disable_default_cloud_init && lookup(local.ubuntu_worker_pools, each.key, null) != null ? [1] : []
     content {
-      content_type = "text/cloud-config"
-      content = jsonencode({
-        # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#apt-configure
-        apt = {
-          sources = {
-            oke-node = {
-              source =  format("deb [trusted=yes] https://objectstorage.us-sanjose-1.oraclecloud.com/p/45eOeErEDZqPGiymXZwpeebCNb5lnwzkcQIhtVf6iOF44eet_efdePaF7T8agNYq/n/odx-oke/b/okn-repositories-private/o/prod/ubuntu-%s/kubernetes-%s stable main", 
-              lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "ubuntu_release", "22.04") == "22.04" ? "jammy" : "noble", 
-              lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "kubernetes_major_version", ""))
-            }
-          }
+      content_type = "text/x-shellscript"
+      content      = templatefile(
+        "${path.module}/cloudinit-ubuntu.sh.tftpl",
+        {
+          version_codename  = lookup(local.ubuntu_supported_versions, lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "ubuntu_release", lookup(each.value, "os_version")), "unsupported_ubuntu_version"),
+          oke_major_version = lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "kubernetes_major_version", "")
+          oke_minor_version = lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "kubernetes_minor_version", "")
         }
-        package_update = true
-        packages = [{
-          apt = [format("oci-oke-node-all-%s", lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "kubernetes_minor_version", ""))]
-        }]
-        runcmd = [
-          "oke bootstrap"
-        ]
-      })
-      filename   = "50-oke-ubuntu.yml"
-      merge_type = local.default_cloud_init_merge_type
+      )
+      filename     = "50-oke-ubuntu.sh"
+      merge_type   = local.default_cloud_init_merge_type
     }
   }
 
@@ -184,7 +173,7 @@ data "cloudinit_config" "workers" {
     precondition {
       condition = lookup(local.ubuntu_worker_pools, each.key, null) == null || (
         lookup(local.ubuntu_worker_pools, each.key, null) != null &&
-          contains(["22.04", "24.04"], lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "ubuntu_release", ""))
+          contains(keys(local.ubuntu_supported_versions), lookup(lookup(local.ubuntu_worker_pools, each.key, {}), "ubuntu_release", ""))
       )
       error_message = <<-EOT
       Supported Ubuntu versions are "22.04" and "24.04".

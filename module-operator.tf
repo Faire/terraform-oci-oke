@@ -44,7 +44,7 @@ locals {
 }
 
 module "operator" {
-  count          = var.create_bastion && var.create_operator ? 1 : 0
+  count          = var.create_operator ? 1 : 0
   source         = "./modules/operator"
   state_id       = local.state_id
   compartment_id = local.compartment_id
@@ -64,6 +64,7 @@ module "operator" {
   install_helm_from_repo    = var.operator_install_helm_from_repo
   install_oci_cli_from_repo = var.operator_install_oci_cli_from_repo
   install_istioctl          = var.operator_install_istioctl
+  install_k8sgpt            = var.operator_install_k8sgpt
   install_k9s               = var.operator_install_k9s
   install_kubectx           = var.operator_install_kubectx
   install_kubectl_from_repo = var.operator_install_kubectl_from_repo
