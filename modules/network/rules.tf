@@ -20,7 +20,7 @@ locals {
     { for k, v in local.fss_rules : k => merge(v, { "nsg_id" = local.fss_nsg_id }) },
     ) : x => merge(y, {
       description               = x
-      stateless                 = lookup(y, "stateless", true)
+      stateless                 = lookup(y, "stateless", var.default_stateless_rules)
       network_security_group_id = lookup(y, "nsg_id")
       direction                 = contains(keys(y), "source") ? "INGRESS" : "EGRESS"
       protocol                  = lookup(y, "protocol")

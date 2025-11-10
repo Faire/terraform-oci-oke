@@ -46,6 +46,7 @@ variable "vcn_cidrs" { type = list(string) }
 variable "vcn_ipv6_cidr" { type = string }
 variable "vcn_id" { type = string }
 variable "worker_is_public" { type = bool }
+variable "default_stateless_rules" { type = bool }
 
 variable "subnets" {
   type = map(object({

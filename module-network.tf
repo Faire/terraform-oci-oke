@@ -156,6 +156,7 @@ module "network" {
   vcn_ipv6_cidr                = local.vcn_ipv6_cidr
   vcn_id                       = local.vcn_id
   worker_is_public             = var.worker_is_public
+  default_stateless_rules      = var.default_stateless_rules
 }
 
 # VCN
