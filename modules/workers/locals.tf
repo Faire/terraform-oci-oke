@@ -21,47 +21,49 @@ locals {
       is_monitoring_disabled   = false
       plugins_config           = {}
     }
-    allow_autoscaler             = false
-    assign_public_ip             = var.assign_public_ip
-    autoscale                    = false
-    block_volume_type            = var.block_volume_type
-    boot_volume_size             = local.boot_volume_size
-    boot_volume_vpus_per_gb      = local.boot_volume_vpus_per_gb
-    capacity_reservation_id      = var.capacity_reservation_id
-    cloud_init                   = [] # empty pool-specific default
-    compartment_id               = var.compartment_id
-    create                       = true
-    disable_default_cloud_init   = var.disable_default_cloud_init
-    drain                        = false
-    eviction_grace_duration      = 300
-    force_node_delete            = true
-    extended_metadata            = {} # empty pool-specific default
-    ignore_initial_pool_size     = false
-    image_id                     = var.image_id
-    image_type                   = var.image_type
-    kubernetes_version           = var.kubernetes_version
-    max_pods_per_node            = min(max(var.max_pods_per_node, 1), 110)
-    memory                       = local.memory
-    mode                         = var.worker_pool_mode
-    node_cycling_enabled         = false
-    node_cycling_max_surge       = 1
-    node_cycling_max_unavailable = 0
-    node_labels                  = var.node_labels
-    nsg_ids                      = [] # empty pool-specific default
-    ocpus                        = local.ocpus
-    os                           = var.image_os
-    os_version                   = var.image_os_version
-    placement_ads                = var.ad_numbers
-    platform_config              = var.platform_config
-    pod_nsg_ids                  = var.pod_nsg_ids
-    pod_subnet_id                = coalesce(var.pod_subnet_id, var.worker_subnet_id, "none")
-    preemptible_config           = var.preemptible_config
-    pv_transit_encryption        = var.pv_transit_encryption
-    shape                        = local.shape
-    size                         = var.worker_pool_size
-    subnet_id                    = var.worker_subnet_id
-    taints                       = [] # empty pool-specific default
-    volume_kms_key_id            = var.volume_kms_key_id
+    allow_autoscaler               = false
+    legacy_imds_endpoints_disabled = var.legacy_imds_endpoints_disabled
+    assign_public_ip               = var.assign_public_ip
+    autoscale                      = false
+    block_volume_type              = var.block_volume_type
+    boot_volume_size               = local.boot_volume_size
+    boot_volume_vpus_per_gb        = local.boot_volume_vpus_per_gb
+    capacity_reservation_id        = var.capacity_reservation_id
+    cloud_init                     = [] # empty pool-specific default
+    compartment_id                 = var.compartment_id
+    create                         = true
+    disable_default_cloud_init     = var.disable_default_cloud_init
+    drain                          = false
+    eviction_grace_duration        = 300
+    force_node_delete              = true
+    extended_metadata              = {} # empty pool-specific default
+    ignore_initial_pool_size       = false
+    image_id                       = var.image_id
+    image_type                     = var.image_type
+    kubernetes_version             = var.kubernetes_version
+    max_pods_per_node              = min(max(var.max_pods_per_node, 1), 110)
+    memory                         = local.memory
+    mode                           = var.worker_pool_mode
+    node_cycling_enabled           = false
+    node_cycling_max_surge         = 1
+    node_cycling_max_unavailable   = 0
+    node_cycling_mode              = ["instance"]
+    node_labels                    = var.node_labels
+    nsg_ids                        = [] # empty pool-specific default
+    ocpus                          = local.ocpus
+    os                             = var.image_os
+    os_version                     = var.image_os_version
+    placement_ads                  = var.ad_numbers
+    platform_config                = var.platform_config
+    pod_nsg_ids                    = var.pod_nsg_ids
+    pod_subnet_id                  = coalesce(var.pod_subnet_id, var.worker_subnet_id, "none")
+    preemptible_config             = var.preemptible_config
+    pv_transit_encryption          = var.pv_transit_encryption
+    shape                          = local.shape
+    size                           = var.worker_pool_size
+    subnet_id                      = var.worker_subnet_id
+    taints                         = [] # empty pool-specific default
+    volume_kms_key_id              = var.volume_kms_key_id
   }
 
   # Merge desired pool configuration onto default values
@@ -169,7 +171,16 @@ locals {
         pool.autoscale ? { "oke.oraclecloud.com/cluster_autoscaler" = "managed" } : {},
         pool.node_labels,
       )
+
+      # Override Node-cycling mode
+      node_cycling_mode = pool.node_cycling_mode != null ? [for entry in pool.node_cycling_mode : lookup(local.supported_node_cycling_mode, lower(entry))] : null
+
     }) if tobool(pool.create)
+  }
+
+  supported_node_cycling_mode = {
+    instance    = "INSTANCE_REPLACE"
+    boot_volume = "BOOT_VOLUME_REPLACE"
   }
 
   enabled_modes = distinct([for w in values(local.enabled_worker_pools) : w.mode])
@@ -224,6 +235,16 @@ locals {
     for k, v in local.enabled_worker_pools : k => v if lookup(v, "mode", "") == "cluster-network"
   }
 
+  # Enabled worker_pool map entries for compute clusters
+  enabled_compute_clusters = {
+    for k, v in local.enabled_worker_pools : k => v if lookup(v, "mode", "") == "compute-cluster"
+  }
+
+  # Prepare a map workers node enabled for compute_clusters { "pool_id###worker_id" => pool_values }
+  compute_cluster_instance_ids_map = { for k, v in local.enabled_compute_clusters : k => toset(lookup(v, "instance_ids", [])) }
+  compute_cluster_instance_ids     = toset(concat(flatten([for k, v in local.compute_cluster_instance_ids_map : [for id in v : format("%s###%s", k, id)]])))
+  compute_cluster_instance_map     = { for id in local.compute_cluster_instance_ids : id => lookup(local.enabled_compute_clusters, element(split("###", id), 0), {}) }
+
   # Sanitized worker_pools output; some conditionally-used defaults would be misleading
   worker_pools_final = {
     for pool_name, pool in local.enabled_worker_pools : pool_name => { for a, b in pool : a => b
@@ -270,15 +291,23 @@ locals {
 
   # Yields {<pool name> = {<instance id> = <instance ip>}} for modes: 'node-pool', 'instance'
   worker_pool_ips = merge(local.worker_instance_ips, local.worker_nodepool_ips)
-  
+
   # Map of nodepools using Ubuntu images.
+
+  ubuntu_supported_versions = {
+    "22.04"         = "jammy"
+    "24.04"         = "noble"
+    "22.04 Minimal" = "jammy"
+    "24.04 Minimal" = "noble"
+  }
+
   ubuntu_worker_pools = {
     for k, v in local.enabled_worker_pools : k => {
       kubernetes_major_version = substr(lookup(v, "kubernetes_version", ""), 1, 4)
       kubernetes_minor_version = substr(lookup(v, "kubernetes_version", ""), 1, -1)
-      ubuntu_release           = lookup(data.oci_core_image.workers[k], "operating_system_version", null) != null ? lookup(data.oci_core_image.workers[k], "operating_system_version") : lookup(v, "os_version", null)
+      ubuntu_release           = lookup(lookup(data.oci_core_image.workers, k, {}), "operating_system_version", null) != null ? lookup(lookup(data.oci_core_image.workers, k, {}), "operating_system_version") : lookup(v, "os_version", null)
     }
     if lookup(v, "mode", var.worker_pool_mode) != "virtual-node-pool" &&
-      contains(coalescelist(split(" ", lookup(data.oci_core_image.workers[k], "operating_system", "")), [lookup(v, "os", "")]), "Ubuntu")
+    contains(coalescelist(split(" ", lookup(lookup(data.oci_core_image.workers, k, {}), "operating_system", "")), [lookup(v, "os", "")]), "Ubuntu")
   }
 }

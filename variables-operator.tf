@@ -83,6 +83,12 @@ variable "operator_install_istioctl" {
   type        = bool
 }
 
+variable "operator_install_k8sgpt" {
+  default     = false
+  description = "Whether to install k8sgpt on the created operator host. NOTE: Provided only as a convenience and not supported by or sourced from Oracle - use at your own risk."
+  type        = bool
+}
+
 variable "operator_install_k9s" {
   default     = false
   description = "Whether to install k9s on the created operator host. NOTE: Provided only as a convenience and not supported by or sourced from Oracle - use at your own risk."
@@ -109,18 +115,19 @@ variable "operator_install_stern" {
 
 variable "operator_shape" {
   default = {
-    shape            = "VM.Standard.E4.Flex",
-    ocpus            = 1,
-    memory           = 4,
-    boot_volume_size = 50
+    shape                     = "VM.Standard.E4.Flex",
+    ocpus                     = 1,
+    memory                    = 4,
+    boot_volume_size          = 50,
+    baseline_ocpu_utilization = 100
   }
-  description = "Shape of the created operator instance."
+  description = "Shape of the created operator instance. Baseline OCPU utilization can be used to provision <a href=https://docs.oracle.com/en-us/iaas/Content/Compute/References/burstable-instances.htm>burstable shapes.</a>"
   type        = map(any)
 }
 
 variable "operator_volume_kms_key_id" {
   default     = null
-  description = "The OCID of the OCI KMS key to assign as the master encryption key for the boot volume."
+  description = "The OCID of the OCI KMS key to assign as the master encryption key for the operator host boot volume."
   type        = string
 }
 

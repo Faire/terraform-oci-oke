@@ -67,12 +67,13 @@ variable "bastion_image_os_version" {
 
 variable "bastion_shape" {
   default = {
-    shape            = "VM.Standard.E4.Flex",
-    ocpus            = 1,
-    memory           = 4,
-    boot_volume_size = 50
+    shape                     = "VM.Standard.E4.Flex",
+    ocpus                     = 1,
+    memory                    = 4,
+    boot_volume_size          = 50,
+    baseline_ocpu_utilization = 100
   }
-  description = "The shape of bastion instance."
+  description = "The shape of bastion instance. Baseline OCPU utilization can be used to provision <a href=https://docs.oracle.com/en-us/iaas/Content/Compute/References/burstable-instances.htm>burstable shapes.</a>"
   type        = map(any)
 }
 
@@ -92,4 +93,10 @@ variable "bastion_await_cloudinit" {
   default     = true
   description = "Whether to block until successful connection to bastion and completion of cloud-init."
   type        = bool
+}
+
+variable "bastion_volume_kms_key_id" {
+  default     = null
+  description = "The OCID of the OCI KMS key to assign as the master encryption key for the bastion host boot volume."
+  type        = string
 }
