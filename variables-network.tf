@@ -323,4 +323,8 @@ variable "enable_waf" {
   type        = bool
   default     = false
 }
-
+variable "default_stateless_rules" {
+  description = "Whether to enable stateless rules for all network security groups."
+  type        = bool
+  default     = false
+}
