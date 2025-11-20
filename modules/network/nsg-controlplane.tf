@@ -82,6 +82,11 @@ locals {
         protocol = local.tcp_protocol, port = local.apiserver_port, source = allowed_cidr, source_type = local.rule_type_cidr
       }
     },
+    { for allowed_cidr in var.control_plane_allowed_cidrs :
+      "Allow TCP egress from kube-apiserver to ${allowed_cidr}" => {
+        protocol = local.tcp_protocol, port = local.apiserver_port, destination = allowed_cidr, destination_type = local.rule_type_cidr
+      }
+    },  // Allow egress to allowed CIDRs. This could be removed once https://github.com/oracle-terraform-modules/terraform-oci-oke/pull/1044/files#diff-22581a25add62ab66a7fea3ec452a13a8be27d31e3b467ae2b6c1230b9d77a10R158-R162 is merged.
     var.allow_rules_cp
   ) : {}
 }
