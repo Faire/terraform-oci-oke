@@ -31,12 +31,13 @@ module "workers" {
   ad_numbers_to_names = local.ad_numbers_to_names
 
   # Cluster
-  apiserver_private_host = local.apiserver_private_host
-  cluster_ca_cert        = local.cluster_ca_cert
-  cluster_dns            = var.cluster_dns
-  cluster_id             = coalesce(var.cluster_id, one(module.cluster[*].cluster_id))
-  cluster_type           = var.cluster_type
-  kubernetes_version     = var.kubernetes_version
+  apiserver_private_host            = local.apiserver_private_host
+  cluster_ca_cert                   = local.cluster_ca_cert
+  cluster_dns                       = var.cluster_dns
+  cluster_id                        = coalesce(var.cluster_id, one(module.cluster[*].cluster_id))
+  cluster_type                      = var.cluster_type
+  kubernetes_version                = var.kubernetes_version
+  allow_short_container_image_names = var.allow_short_container_image_names
 
   # Compute clusters
   compute_clusters = var.worker_compute_clusters
@@ -77,6 +78,7 @@ module "workers" {
   worker_nsg_ids                 = concat(var.worker_nsg_ids, [try(module.network.worker_nsg_id, null)])
   worker_subnet_id               = try(module.network.worker_subnet_id, "") # safe destroy; validated in submodule
   preemptible_config             = var.worker_preemptible_config
+  enable_ipv6                    = var.enable_ipv6
 
   # Tagging
   tag_namespace    = var.tag_namespace

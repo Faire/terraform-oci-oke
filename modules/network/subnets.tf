@@ -16,7 +16,7 @@ locals {
           : (lookup(v, "cidr", null) != null ? "cidr"
             : (lookup(v, "id", null) != null ? "id"
       : "invalid"))))
-    }) if try(v.create, "auto") != "never"
+    }) if lookup(v, "create", "auto") != "never"
   }
 
   # Handle subnets configured with provided CIDRs
@@ -68,7 +68,7 @@ locals {
   # Generate IPv6 CIDRs
   subnets_ipv6_cidr = var.enable_ipv6 == true ? {
     for k, v in local.subnets_with_ipv6_cidr_defaults : k => merge(v, {
-      "ipv6_cidr" = length(regexall("^\\d+,[ ]?\\d+$", lookup(v, "ipv6_cidr"))) > 0 ? cidrsubnet(var.vcn_ipv6_cidr, tonumber(split(",", lookup(v, "ipv6_cidr"))[0]), tonumber(trim(split(",", lookup(v, "ipv6_cidr"))[1], " "))) : lookup(v, "ipv6_cidr")
+      "ipv6_cidr" = length(regexall("^\\d+,[ ]?\\d+$", lookup(v, "ipv6_cidr"))) > 0 ? cidrsubnet(var.vcn_ipv6_cidrs[0], tonumber(split(",", lookup(v, "ipv6_cidr"))[0]), tonumber(trim(split(",", lookup(v, "ipv6_cidr"))[1], " "))) : lookup(v, "ipv6_cidr")
     }) if try(v.create, "auto") != "never"
   } : { for k, v in var.subnets : k => merge(v, { "ipv6_cidr" : null }) if try(v.create, "auto") != "never" }
 
@@ -103,7 +103,7 @@ locals {
   # - Subnet is configured with newbits and/or netnum/cidr
   # - Not configured with create == 'never'
   # - Not configured with an existing 'id'
-  subnets_to_create = try(merge(
+  subnets_to_create = merge(
     { for k, v in local.subnet_info : k =>
       # Override `create = true` if configured with "always"
       merge(v, lookup(try(lookup(var.subnets, k), { create = "never" }), "create", "auto") == "always" ? { "create" = true } : {})
@@ -116,7 +116,7 @@ locals {
         ]),
       ])
     }
-  ), {})
+  )
 
   subnet_output = { for k, v in var.subnets :
     k => lookup(v, "id", null) != null ? v.id : lookup(lookup(oci_core_subnet.oke, k, {}), "id", null)

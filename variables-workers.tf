@@ -43,9 +43,10 @@ variable "worker_pool_mode" {
       "virtual-node-pool",
       "instance",
       "instance-pool",
-      "cluster-network"
+      "cluster-network",
+      "compute-cluster"
     ], var.worker_pool_mode)
-    error_message = "Accepted values are node-pool, virtual-node-pool, instance, instance-pool, or cluster-network."
+    error_message = "Accepted values are node-pool, virtual-node-pool, instance, instance-pool, cluster-network, or compute-cluster."
   }
 }
 
@@ -71,7 +72,7 @@ variable "worker_compute_clusters" {
 
 variable "worker_is_public" {
   default     = false
-  description = "Whether to provision workers with public IPs allocated by default when unspecified on a pool."
+  description = "Whether to provision workers with public IPs allocated by default when unspecified on a pool. It should be true when creating dual-stack clusters."
   type        = bool
 }
 
@@ -250,4 +251,10 @@ variable "agent_config" {
     is_monitoring_disabled   = bool,
     plugins_config           = map(string),
   })
+}
+
+variable "allow_short_container_image_names" {
+  default     = false
+  description = "Whether to allow short container image names for K8s version >= 1.34.0. See <a href=https://github.com/cri-o/cri-o/pull/9401>CRI-O pull request</a> for more information."
+  type        = bool
 }

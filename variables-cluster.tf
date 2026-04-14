@@ -41,6 +41,12 @@ variable "control_plane_nsg_ids" {
   type        = set(string)
 }
 
+variable "backend_nsg_ids" {
+  default     = []
+  description = "An additional list of network security groups (NSG) ids for the LB backends. Used when the service rule management mode is set to NSG via annotations. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringloadbalancersnetworkloadbalancers-subtopic.htm#contengcreatingloadbalancer_topic-Specifying_Load_Balancer_Security_Rule_Management_Options>Security Rule Management Options for Load Balancers and Network Load Balancers</a> for more information."
+  type        = set(string)
+}
+
 variable "cni_type" {
   default     = "flannel"
   description = "The CNI for the cluster: 'flannel' or 'npn'. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm>Pod Networking</a>."
@@ -57,6 +63,12 @@ variable "enable_ipv6" {
   type        = bool
 }
 
+variable "oke_ip_families" {
+  default     = []
+  type        = list(string)
+  description = "Override the ip_families attribute for the OKE cluster. Supported values: ['IPv4'] or ['IPV4', 'IPv6']"
+}
+
 variable "pods_cidr" {
   default     = "10.244.0.0/16"
   description = "The CIDR range used for IP addresses by the pods. A /16 CIDR is generally sufficient. This CIDR should not overlap with any subnet range in the VCN (it can also be outside the VCN CIDR range). Ignored when cni_type = 'npn'."
@@ -70,7 +82,7 @@ variable "services_cidr" {
 }
 
 variable "kubernetes_version" {
-  default     = "v1.26.2"
+  default     = "v1.34.2"
   description = "The version of kubernetes to use when provisioning OKE or to upgrade an existing OKE cluster to."
   type        = string
 }
