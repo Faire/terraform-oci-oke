@@ -9,7 +9,7 @@ variable "create_operator" {
 
 variable "operator_availability_domain" {
   default     = null
-  description = "The availability domain for FSS placement. Defaults to first available."
+  description = "The availability domain for operator placement. Defaults to first available."
   type        = string
 }
 
@@ -152,5 +152,11 @@ variable "operator_private_ip" {
 variable "operator_await_cloudinit" {
   default     = true
   description = "Whether to block until successful connection to operator and completion of cloud-init."
+  type        = bool
+}
+
+variable "operator_legacy_imds_endpoints_disabled" {
+  default     = true
+  description = "Whether to disable requests to the IMDSv1 endpoint and only allow requests to the IMDSv2 endpoint for the operator instance."
   type        = bool
 }

@@ -43,10 +43,9 @@ variable "load_balancers" { type = string }
 variable "nat_gateway_id" { type = string }
 variable "nat_route_table_id" { type = string }
 variable "vcn_cidrs" { type = list(string) }
-variable "vcn_ipv6_cidr" { type = string }
+variable "vcn_ipv6_cidrs" { type = list(string) }
 variable "vcn_id" { type = string }
 variable "worker_is_public" { type = bool }
-variable "default_stateless_rules" { type = bool }
 
 variable "subnets" {
   type = map(object({
@@ -67,3 +66,5 @@ variable "nsgs" {
     id     = optional(string)
   }))
 }
+
+variable "use_stateless_rules" { type = bool }

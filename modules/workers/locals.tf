@@ -24,6 +24,7 @@ locals {
     allow_autoscaler               = false
     legacy_imds_endpoints_disabled = var.legacy_imds_endpoints_disabled
     assign_public_ip               = var.assign_public_ip
+    assign_ipv6ip                  = var.enable_ipv6 ? true : false
     autoscale                      = false
     block_volume_type              = var.block_volume_type
     boot_volume_size               = local.boot_volume_size
@@ -35,6 +36,7 @@ locals {
     disable_default_cloud_init     = var.disable_default_cloud_init
     drain                          = false
     eviction_grace_duration        = 300
+    force_node_action              = true
     force_node_delete              = true
     extended_metadata              = {} # empty pool-specific default
     ignore_initial_pool_size       = false
@@ -295,10 +297,12 @@ locals {
   # Map of nodepools using Ubuntu images.
 
   ubuntu_supported_versions = {
-    "22.04"         = "jammy"
-    "24.04"         = "noble"
-    "22.04 Minimal" = "jammy"
-    "24.04 Minimal" = "noble"
+    "22.04"                 = "jammy"
+    "24.04"                 = "noble"
+    "22.04 Minimal"         = "jammy"
+    "22.04 Minimal aarch64" = "jammy"
+    "24.04 Minimal"         = "noble"
+    "24.04 Minimal aarch64" = "noble"
   }
 
   ubuntu_worker_pools = {
