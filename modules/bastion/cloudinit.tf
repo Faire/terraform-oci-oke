@@ -35,6 +35,16 @@ data "cloudinit_config" "bastion" {
     content  = jsonencode({ users = ["default", var.user] })
     filename = "10-user.yml"
   }
+
+  # Include custom cloud init MIME parts (inline string content only)
+  dynamic "part" {
+    for_each = var.cloud_init
+    iterator = part
+    content {
+      content      = part.value.content
+      content_type = part.value.content_type
+    }
+  }
 }
 
 resource "null_resource" "await_cloudinit" {

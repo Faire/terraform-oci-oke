@@ -28,6 +28,20 @@ variable "timezone" { type = string }
 variable "upgrade" { type = bool }
 variable "user" { type = string }
 variable "volume_kms_key_id" { type = string }
+variable "cloud_init" {
+  default     = []
+  description = "Optional extra text userdata merged after the default bastion cloud-init. Inline string content only; optional content_type defaults to text/x-shellscript."
+  type = list(object({
+    content      = string
+    content_type = optional(string, "text/x-shellscript")
+  }))
+  validation {
+    condition = alltrue([
+      for p in var.cloud_init : length(trimspace(p.content)) > 0
+    ])
+    error_message = "Each cloud_init entry must include non-empty content after trimming whitespace."
+  }
+}
 
 # Tags
 variable "defined_tags" { type = map(string) }

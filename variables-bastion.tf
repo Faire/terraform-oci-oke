@@ -95,6 +95,21 @@ variable "bastion_await_cloudinit" {
   type        = bool
 }
 
+variable "bastion_cloud_init" {
+  default     = []
+  description = "Optional extra text userdata merged after the default bastion cloud-init. Each entry uses inline string content only (required) and optional content_type; content_type defaults to text/x-shellscript for shell scripts."
+  type = list(object({
+    content      = string
+    content_type = optional(string, "text/x-shellscript")
+  }))
+  validation {
+    condition = alltrue([
+      for p in var.bastion_cloud_init : length(trimspace(p.content)) > 0
+    ])
+    error_message = "Each bastion_cloud_init entry must include non-empty content after trimming whitespace."
+  }
+}
+
 variable "bastion_volume_kms_key_id" {
   default     = null
   description = "The OCID of the OCI KMS key to assign as the master encryption key for the bastion host boot volume."
