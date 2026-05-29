@@ -89,7 +89,7 @@ resource "oci_core_instance" "operator" {
     ignore_changes = [
       availability_domain,
       defined_tags, freeform_tags, display_name,
-      create_vnic_details, metadata, source_details,
+      create_vnic_details, source_details,
     ]
 
     replace_triggered_by = [null_resource.operator_changed]
